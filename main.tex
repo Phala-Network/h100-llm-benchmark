@@ -31,7 +31,7 @@ This report evaluates the performance impact of enabling Trusted Execution Envir
 
 \section{Introduction}
 
-Trusted Execution Environments (TEEs), are increasingly important in machine learning and AI due to rising security requirements across both enterprise and decentralized applications. The introduction of TEE-enabled GPUs, such as the NVIDIA H100, adds an extra layer of protection for sensitive data but may affect performance. Understanding these trade-offs, especially for large-scale machine learning tasks, is crucial for adopting TEE in high-performance AI applications.
+Trusted Execution Environments (TEEs), are increasingly important in machine learning and AI due to rising security requirements across both enterprise and decentralized applications~\cite{sabt2015trusted, matetic2018delegatee, ayoade2018decentralized}. The introduction of TEE-enabled GPUs, such as the NVIDIA H100, adds an extra layer of protection for sensitive data but may affect performance. Understanding these trade-offs, especially for large-scale machine learning tasks, is crucial for adopting TEE in high-performance AI applications~\cite{yudha2022lite, wang2024confidential}.
 
 This report quantifies the performance overhead of enabling TEE on the NVIDIA H100 GPU during LLM inference tasks, examining where the overhead arises and under what conditions it can be minimized.
 
@@ -39,19 +39,19 @@ This report quantifies the performance overhead of enabling TEE on the NVIDIA H1
 
 \subsection{Trusted Execution Environment}
 
-A TEE is a hardware-based security feature that isolates computations, preventing unauthorized access and tampering—even from the operating system or the physical hardware owner. As the core technology to enable Confidential Computing, TEEs create secure enclaves where sensitive data and code are processed with encryption, ensuring confidentiality and integrity even if the broader system is compromised. Traditionally implemented in CPUs, TEE technology was extended to GPUs by NVIDIA in 2023, enabling tamper-proof and confidentiality-preserving computation inside the GPU with minimal performance penalty.
+A TEE is a hardware-based security feature that isolates computations, preventing unauthorized access and tampering—even from the operating system or the physical hardware owner. As the core technology to enable Confidential Computing, TEEs create secure enclaves where sensitive data and code are processed with encryption, ensuring confidentiality and integrity even if the broader system is compromised~\cite{sabt2015trusted}. Traditionally implemented in CPUs, TEE technology was extended to GPUs by NVIDIA in 2023, enabling tamper-proof and confidentiality-preserving computation inside the GPU with minimal performance penalty~\cite{dhanuskodi2023creating}.
 
 \subsection{nVIDIA H100 GPU}
 
-The NVIDIA H100 GPU represents a significant milestone as the first GPU to support TEE. In TEE mode, the H100 operates in an isolated and secure environment where data transfers between the CPU and GPU are encrypted. This is facilitated by "bounce buffers," which protect all inputs and outputs during transit between the CPU’s encrypted memory and the GPU’s internal memory.
+The NVIDIA H100 GPU represents a significant milestone as the first GPU to support TEE. In TEE mode, the H100 operates in an isolated and secure environment where data transfers between the CPU and GPU are encrypted. This is facilitated by ``bounce buffers'', which protect all inputs and outputs during transit between the CPU’s encrypted memory and the GPU’s internal memory~\cite{dhanuskodi2023creating}.
 
-To maintain end-to-end security, the H100 works in conjunction with CPU TEEs, such as Intel’s TDX or AMD’s SEV-SNP, securing communication channels between the GPU driver and interacting software. This prevents unauthorized access and ensures data integrity throughout the process.
+To maintain end-to-end security, the H100 works in conjunction with CPU TEEs, such as Intel’s TDX~\cite{TDX} or AMD’s SEV-SNP~\cite{SEV-SNP, sev2020strengthening}, securing communication channels between the GPU driver and interacting software. This prevents unauthorized access and ensures data integrity throughout the process.
 
 The H100 also implements remote attestation to verify the GPU’s identity and the authenticity of its firmware. Secure Boot further strengthens security by ensuring that only authenticated firmware is executed during the GPU’s boot process.
 
 \subsection{Performance Impact}
 
-Enabling TEE on the NVIDIA H100 GPU introduces performance overheads primarily due to additional encryption and decryption during secure data transfer. While the GPU’s internal computation remains unaffected, the main bottleneck lies in the CPU-GPU IO, particularly when data is exchanged via PCIe. This impact varies with the size of the data transfer. The following sections present experimental results quantifying these effects across various use cases.
+Enabling TEE on the NVIDIA H100 GPU introduces performance overheads primarily due to additional encryption and decryption during secure data transfer~\cite{mohan2024securing}. While the GPU’s internal computation remains unaffected, the main bottleneck lies in the CPU-GPU IO, particularly when data is exchanged via PCIe. This impact varies with the size of the data transfer. The following sections present experimental results quantifying these effects across various use cases.
 
 With the TEE-enabled NVIDIA H100 GPU, it becomes crucial to quantify performance trade-offs during practical use cases. In the next section, we outline the methodology used to assess the performance impact of TEE during LLM inference tasks.
 
