@@ -1,0 +1,4 @@
+{
+  "latency_command": "taskset -c 0 python3 benchmark_latency.py       --output-json results//latency_gemma2-27b.json       --model google/gemma-2-27b-it --tensor-parallel-size 1 --load-format dummy --num-iters-warmup 5 --num-iters 15",
+  "gpu_type": "H200"
+}

@@ -1,0 +1,5 @@
+{
+  "server_command": "taskset -c 0 python3       -m vllm.entrypoints.openai.api_server       --model google/gemma-2-27b-it --tensor-parallel-size 1 --swap-space 16 --disable-log-stats  --disable-log-requests  --load-format dummy",
+  "client_command": "python3 benchmark_serving.py         --save-result         --result-dir results/         --result-filename serving_gemma27b_tp1_sharegpt_qps_inf.json         --request-rate inf         --model google/gemma-2-27b-it --backend vllm --dataset-name sharegpt --dataset-path ./ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts 1000",
+  "gpu_type": "H200"
+}

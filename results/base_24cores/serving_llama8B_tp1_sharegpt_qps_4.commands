@@ -1,0 +1,5 @@
+{
+  "server_command": "taskset -c 1 python3       -m vllm.entrypoints.openai.api_server       --model meta-llama/Meta-Llama-3.1-8B-Instruct --tensor-parallel-size 1 --swap-space 16 --disable-log-stats  --disable-log-requests  --load-format dummy",
+  "client_command": "python3 benchmark_serving.py         --save-result         --result-dir results/         --result-filename serving_llama8B_tp1_sharegpt_qps_4.json         --request-rate 4         --model meta-llama/Meta-Llama-3.1-8B-Instruct --backend vllm --dataset-name sharegpt --dataset-path ./ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts 1000",
+  "gpu_type": "H200"
+}
