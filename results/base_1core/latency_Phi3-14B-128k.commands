@@ -1,0 +1,4 @@
+{
+  "latency_command": "taskset -c 0 python3 benchmark_latency.py       --output-json results//latency_Phi3-14B-128k.json       --model microsoft/Phi-3-medium-128k-instruct --tensor-parallel-size 1 --load-format dummy --num-iters-warmup 5 --num-iters 15",
+  "gpu_type": "H200"
+}

@@ -1,0 +1,4 @@
+{
+  "latency_command": "taskset -c 1 python3 benchmark_latency.py       --output-json results//latency_llama8B.json       --model meta-llama/Meta-Llama-3.1-8B-Instruct --tensor-parallel-size 1 --load-format dummy --num-iters-warmup 5 --num-iters 15",
+  "gpu_type": "H200"
+}
