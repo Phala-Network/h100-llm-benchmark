@@ -9,6 +9,8 @@
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 \usepackage{booktabs}
 \usepackage{tablefootnote}
+\usepackage{multirow}
+\usepackage{subcaption}
 
 \title{Confidential Computing on nVIDIA H100 GPU: A Performance Benchmark Study}
 \author{
@@ -24,6 +26,8 @@
   Shunfan Zhou \\
   \texttt{shelvenzhou@phala.network}
 }
+
+\newcommand{\peng}[1]{\textcolor{cyan}{#1}}
 
 \begin{document}
 \maketitle
@@ -95,7 +99,7 @@ Experiments were structured to explore the impact of TEE mode under diverse cond
 The experiments were set up with the following hardware:
 
 \begin{itemize}
-    \item \textbf{GPU}: nVIDIA H100 NVL (94GB, 3.9TB/s bandwidth)
+    \item \textbf{GPU}: nVIDIA H100 NVL (94GB, 3.9TB/s bandwidth) and nVIDIA H200 NVL
     \item \textbf{CPU}: AMD EPYC 9V84 96-Core Processor with SEV-SNP
     \item \textbf{Memory}: 314 GB
     \item \textbf{Driver versions}:
@@ -121,41 +125,58 @@ Three LLMs were used for inference:
 
 \section{Results}
 
-\noindent\textbf{Conclusion 1: The average overhead is less than 7\%.} We quantified the overhead by measuring the throughput with TEE mode enabled versus disabled, across varying input sizes and model configurations, as shown in Table \ref{tab:throughput_tee_on_ff}.
+\peng{\noindent\textbf{Conclusion 1: The average overhead is less than 9\%.}} We quantified the overhead by measuring the throughput with TEE mode enabled versus disabled, across varying input sizes and model configurations, as shown in Table \ref{tab:throughput_tee_on_ff}.
 
 \begin{table}[htbp]
     \centering
-    \begin{tabular}{lccc|ccc}
+    \begin{tabular}{llccc|ccc}
         \toprule
-        \textbf{Model}         & \multicolumn{3}{c}{\textbf{TPS (tokens/s)}} & \multicolumn{3}{c}{\textbf{QPS (req/s)}}                                                                                                                                                                                                \\
-                               & \textbf{TEE-on}                             & \textbf{TEE-off}                         & \textbf{Overhead}                                                          & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          \\
+        \textbf{GPU} & \textbf{Model}         & \multicolumn{3}{c}{\textbf{TPS (tokens/s)}} & \multicolumn{3}{c}{\textbf{QPS (req/s)}}                                                                                                                                                                                                \\
+        &                       & \textbf{TEE-on}                             & \textbf{TEE-off}                         & \textbf{Overhead}                                                          & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          \\
         \midrule
-        \textbf{LLama-3.1-8B}  & 123.2985                                    & 132.3618                                 & 6.85\%                                                                     & 18.2141         & 18.8208          & 3.22\%                                                                     \\
-        \textbf{Phi3-14B-128k} & 66.5845                                     & 69.7787                                  & 4.58\%                                                                     & 7.1760          & 7.3456           & 2.31\%                                                                     \\
-        \textbf{Llama-3.1-70B} & 2.4822                                      & 2.4789                                   & -0.13\%\tablefootnote{The overhead is negative due to the precision loss.} & 0.8325          & 0.8295           & -0.36\%\tablefootnote{The overhead is negative due to the precision loss.} \\
+        \multirow{3}{*}{\textbf{H100}} & \textbf{LLama-3.1-8B}  & 123.2985                                    & 132.3618                                 & 6.85\%                                                                     & 18.2141         & 18.8208          & 3.22\%                                                                     \\
+        & \textbf{Phi3-14B-128k} & 66.5845                                     & 69.7787                                  & 4.58\%                                                                     & 7.1760          & 7.3456           & 2.31\%                                                                     \\
+        & \textbf{Llama-3.1-70B} & 2.4822                                      & 2.4789                                   & -0.13\%\tablefootnote{The overhead is negative due to the precision loss.} & 0.8325          & 0.8295           & -0.36\%\tablefootnote{The overhead is negative due to the precision loss.} \\
+        \midrule
+        \multirow{3}{*}{\textbf{H200}} & \textbf{LLama-3.1-8B}  & 121.0412                                    & 132.7830                                 & 8.84\%                                                                     & 29.5973         & 32.0134          & 7.55\%                                                                     \\
+        & \textbf{Phi3-14B-128k} & 68.4287                                     & 72.9825                                  & 6.24\%                                                                     & 12.8294         & 13.8558          & 7.41\%                                                                      \\
+        & \textbf{Llama-3.1-70B} & 4.0797                                      & 4.1753                                   & 2.29\%                                                                     & 2.1874          & 2.2011           & 0.63\% \\ 
         \bottomrule
     \end{tabular}
     \caption{Performance comparison of TEE-on and TEE-off modes for various models in terms of TPS (tokens per second) and QPS (queries per second).}
     \label{tab:throughput_tee_on_ff}
 \end{table}
 
-
 The throughput is measured in two ways: the average throughput of the outputted tokens per second (TPS), and that of the parallel requests the hardware can handle (QPS). TPS is measured by running the model with a batch size of 1. It shows the pure latency overhead introduced by the TEE mode and reflects the performance of real-time requests. QPS is measured by maximizing the query throughput with a dynamically optimized batch size. It reflects the minimal average overhead the TEE mode brings.
 
-\noindent\textbf{Conclusion 2: The overhead reduces toward zero as the model size grows.} As shown in Table \ref{tab:throughput_tee_on_ff}, the smallest model (\textbf{Llama-3.1-8B}) has the highest overhead. The medium-sized model (\textbf{Phi-3-14B-128k}) has roughly two-thirds of the overhead compared to the smaller one. The largest model (\textbf{Llama-3.1-70B}) has a trivial overhead close to zero.
+\peng{
+We observed a difference in the impact of TEE mode between H100 and H200 in Table~\ref{tab:throughput_tee_on_ff}.
+First, compared to H100, TEE mode introduces more overhead in H200 when runing the same model.
+Second, the impact of TEE mode on QPS is more noticeable in H200.
+In H100, the impact of TEE mode on TPS is nearly double that of QPS, but in H200, the difference decreased significantly.
+}
+
+\noindent\textbf{Conclusion 2: The overhead reduces as the model size grows.} As shown in Table \ref{tab:throughput_tee_on_ff}, the smallest model (\textbf{Llama-3.1-8B}) has the highest overhead. The medium-sized model (\textbf{Phi-3-14B-128k}) has roughly two-thirds of the overhead compared to the smaller one. 
+\peng{Notably, the largest model (\textbf{Llama-3.1-70B}) has a trivial overhead close to zero in H100.}
 
 \noindent\textbf{Conclusion 3: The latency is the main factor contributing to the overhead of the TEE mode.} Table \ref{tab:latency_tee_on_ff} shows the overhead introduced to the latency measured by TTFT and ITL. TTFT has a higher overhead compared with ITL, indicating the bottleneck is likely introduced by the I/O instead of the computation happening inside the TEE. Nevertheless, the overhead becomes trivial when hosting heavy computation models like \textbf{Llama-3.1-70B}.
+\peng{Additionally, TEE mode has also a greater impact on TTFL and ITL in H200 compared to H100.}
 
 \begin{table}[htbp]
     \centering
-    \begin{tabular}{lccc|ccc}
+    \begin{tabular}{llccc|ccc}
         \toprule
-        \textbf{Model}         & \multicolumn{3}{c}{\textbf{TTFT (s)}} & \multicolumn{3}{c}{\textbf{ITL (s)}}                                                                                                                                                                                                \\
-                               & \textbf{TEE-on}                       & \textbf{TEE-off}                     & \textbf{Overhead}                                                          & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          \\
+        \textbf{GPU} & \textbf{Model}         & \multicolumn{3}{c}{\textbf{TTFT (s)}} & \multicolumn{3}{c}{\textbf{ITL (s)}}                                                                                                                                                                                                \\
+        &                       & \textbf{TEE-on}                       & \textbf{TEE-off}                     & \textbf{Overhead}                                                          & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          \\
         \midrule
-        \textbf{LLama-3.1-8B}  & 0.0288                                & 0.0242                               & 19.03\%                                                                    & 1.6743          & 1.5549           & 7.67\%                                                                     \\
-        \textbf{Phi3-14B-128k} & 0.0546                                & 0.0463                               & 18.02\%                                                                    & 3.7676          & 3.5784           & 5.29\%                                                                     \\
-        \textbf{Llama-3.1-70B} & 0.5108                                & 0.5129                               & -0.41\%\tablefootnote{The overhead is negative due to the precision loss.} & 94.8714         & 95.2395          & -0.39\%\tablefootnote{The overhead is negative due to the precision loss.} \\
+        \multirow{3}{*}{\textbf{H100}} & \textbf{LLama-3.1-8B}  & 0.0288                                & 0.0242                               & 19.03\%                                                                    & 1.6743          & 1.5549           & 7.67\%                                                                     \\
+        & \textbf{Phi3-14B-128k} & 0.0546                                & 0.0463                               & 18.02\%                                                                    & 3.7676          & 3.5784           & 5.29\%                                                                     \\
+        & \textbf{Llama-3.1-70B} & 0.5108                                & 0.5129                               & -0.41\%\tablefootnote{The overhead is negative due to the precision loss.} & 94.8714         & 95.2395          & -0.39\%\tablefootnote{The overhead is negative due to the precision loss.} \\
+
+        \midrule
+        \multirow{3}{*}{\textbf{H200}} & \textbf{LLama-3.1-8B}  & 0.0364                                & 0.0301                               & 20.95\%                                                                    & 1.7158          & 1.5552           & 10.33\%                                                                     \\
+        & \textbf{Phi3-14B-128k} & 0.0524                                & 0.0417                               & 25.60\%                                                                    & 3.6975          & 3.4599           & 6.87\%                                                                     \\
+        & \textbf{Llama-3.1-70B} & 0.4362                                & 0.4204                               & 3.75\%                                                                    & 57.3855          & 55.9771           & 2.52\% \\
         \bottomrule
     \end{tabular}
     \caption{Comparison of TTFT (Time to First Token) and ITL (Inter Output Token Latency) for TEE-on and TEE-off modes across models.}
@@ -166,7 +187,18 @@ The throughput is measured in two ways: the average throughput of the outputted 
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.7\linewidth]{tps-vs-token-size.png}
+    \begin{subfigure}[b]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{outputs/h100/tps-vs-token-size.png}
+        \caption{H100}
+        \label{fig:tps-overhead-vs-token-size-h100}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{outputs/h200_1c/tps-vs-token-size.pdf}
+        \caption{H200}
+        \label{fig:tps-overhead-vs-token-size-h200}
+    \end{subfigure}
     \caption{Throughput overhead across different token sizes (length of the input and output sequence). Short sequences are no longer than 100 tokens. Medium sequences are no longer than 500 tokens. Long sequences are between 501 and 1500 tokens.}
     \label{fig:tps-overhead-vs-token-size}
 \end{figure}
@@ -174,14 +206,19 @@ The throughput is measured in two ways: the average throughput of the outputted 
 \begin{table}[htbp]
     \centering
     \resizebox{\textwidth}{!}{%
-        \begin{tabular}{lccc|ccc|ccc}
+        \begin{tabular}{llccc|ccc|ccc}
             \toprule
-            \textbf{Model}         & \multicolumn{3}{c}{\textbf{TPS - short (tokens/s)}} & \multicolumn{3}{c}{\textbf{TPS - medium (tokens/s)}} & \multicolumn{3}{c}{\textbf{TPS - long (tokens/s)}}                                                                                                                                                                                                                                     \\
-                                   & \textbf{TEE-on}                                     & \textbf{TEE-off}                                     & \textbf{Overhead}                                  & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          \\
+            \textbf{GPU} & \textbf{Model}         & \multicolumn{3}{c}{\textbf{TPS - short (tokens/s)}} & \multicolumn{3}{c}{\textbf{TPS - medium (tokens/s)}} & \multicolumn{3}{c}{\textbf{TPS - long (tokens/s)}}                                                                                                                                                                                                                                     \\
+            &                       & \textbf{TEE-on}                                     & \textbf{TEE-off}                                     & \textbf{Overhead}                                  & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          \\
             \midrule
-            \textbf{LLama-3.1-8B}  & 127.0310                                            & 136.8282                                             & 7.16\%                                             & 122.9356        & 132.0464         & 6.90\%                                                                     & 122.9705        & 131.7333         & 6.65\%                                                                     \\
-            \textbf{Phi3-14B-128k} & 70.9799                                             & 74.7556                                              & 5.05\%                                             & 66.1690         & 69.3104          & 4.53\%                                                                     & 66.2987         & 69.4176          & 4.49\%                                                                     \\
-            \textbf{Llama-3.1-70B} & 2.5983                                              & 2.6073                                               & 0.34\%                                             & 2.4413          & 2.4374           & -0.16\%\tablefootnote{The overhead is negative due to the precision loss.} & 2.5245          & 2.5168           & -0.30\%\tablefootnote{The overhead is negative due to the precision loss.} \\
+            \multirow{3}{*}{\textbf{H100}} & \textbf{LLama-3.1-8B}  & 127.0310                                            & 136.8282                                             & 7.16\%                                             & 122.9356        & 132.0464         & 6.90\%                                                                     & 122.9705        & 131.7333         & 6.65\%                                                                     \\
+            & \textbf{Phi3-14B-128k} & 70.9799                                             & 74.7556                                              & 5.05\%                                             & 66.1690         & 69.3104          & 4.53\%                                                                     & 66.2987         & 69.4176          & 4.49\%                                                                     \\
+            & \textbf{Llama-3.1-70B} & 2.5983                                              & 2.6073                                               & 0.34\%                                             & 2.4413          & 2.4374           & -0.16\%\tablefootnote{The overhead is negative due to the precision loss.} & 2.5245          & 2.5168           & -0.30\%\tablefootnote{The overhead is negative due to the precision loss.} \\
+            
+            \midrule
+            \multirow{3}{*}{\textbf{H200}} & \textbf{LLama-3.1-8B}  & 124.1744                                            & 136.2283                                             & 8.85\%                                             & 120.4250        & 132.2366         & 8.93\%                                                                     & 121.3849        & 132.9002         & 8.66\%                                                                     \\
+            & \textbf{Phi3-14B-128k} & 71.8940                                             & 76.2754                                              & 5.74\%                                             & 67.8290         & 72.3372          & 6.23\%                                                                     & 68.5863         & 73.2384          & 6.35\%                                                                     \\
+            & \textbf{Llama-3.1-70B} & 4.2261                                              & 4.3295                                               & 2.39\%                                             & 4.0425          & 4.1386           & 2.32\%                                                                     & 4.0947          & 4.1886          & 2.24\%                                                                     \\
             \bottomrule
         \end{tabular}%
     }
@@ -189,30 +226,50 @@ The throughput is measured in two ways: the average throughput of the outputted 
     \label{tab:tps_short_medium_long}
 \end{table}
 
-\noindent\textbf{Conclusion 5: TEE can reach typical throughput}
-
+\noindent\textbf{Conclusion 5: TEE can reach typical throughput.}
 Our experiments revealed that, with medium-sized inputs, the nVIDIA H100 GPU achieves 130 TPS for Llama-3.1-8B, while the larger Phi-3-14B model reaches approximately 6 TPS. These results demonstrate the robust performance of the H100 GPU across models of varying complexity.
 
-More detailed experimental data is shown in Figure \ref{fig:scatter-llama8b}, \ref{fig:scatter-phi14b}, and \ref{fig:scatter-llama70b}.
+More detailed experimental data for H100 is shown in Figures \ref{fig:scatter-llama8b}, \ref{fig:scatter-phi14b}, and \ref{fig:scatter-llama70b}, and for H200 in Figures \ref{fig:scatter-llama8b}, \ref{fig:scatter-phi14b}, and \ref{fig:scatter-llama70b}.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=1\linewidth]{scatter-llama8b.png}
-    \caption{Throughput vs output token size for \textbf{LLama-3.1-8B}}
+    \includegraphics[width=1\linewidth]{outputs/h100/scatter-llama8b.png}
+    \caption{Throughput vs output token size for \textbf{LLama-3.1-8B} in H100.}
     \label{fig:scatter-llama8b}
 \end{figure}
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=1\linewidth]{scatter-phi14b.png}
-    \caption{Throughput vs output token size for \textbf{Phi3-14B-128k}}
+    \includegraphics[width=1\linewidth]{outputs/h100/scatter-phi14b.png}
+    \caption{Throughput vs output token size for \textbf{Phi3-14B-128k} in H100.}
     \label{fig:scatter-phi14b}
 \end{figure}
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=1\linewidth]{scatter-llama70b.png}
-    \caption{Throughput vs output token size for \textbf{Llama-3.1-70B}}
+    \includegraphics[width=1\linewidth]{outputs/h100/scatter-llama70b.png}
+    \caption{Throughput vs output token size for \textbf{Llama-3.1-70B} in H100.}
+    \label{fig:scatter-llama70b}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\linewidth]{outputs/h200_1c/scatter-llama8b.png}
+    \caption{Throughput vs output token size for \textbf{LLama-3.1-8B} in H200.}
+    \label{fig:scatter-llama8b}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\linewidth]{outputs/h200_1c/scatter-phi14b.png}
+    \caption{Throughput vs output token size for \textbf{Phi3-14B-128k} in H200.}
+    \label{fig:scatter-phi14b}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\linewidth]{outputs/h200_1c/scatter-llama70b.png}
+    \caption{Throughput vs output token size for \textbf{Llama-3.1-70B} in H200.}
     \label{fig:scatter-llama70b}
 \end{figure}
 
