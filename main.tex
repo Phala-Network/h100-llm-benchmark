@@ -12,7 +12,7 @@
 \usepackage{multirow}
 \usepackage{subcaption}
 
-\title{Confidential Computing on nVIDIA H-series GPU: A Performance Benchmark Study}
+\title{Confidential Computing on nVIDIA Hopper GPUs: A Performance Benchmark Study}
 \author{
   Jianwei Zhu \\
   \texttt{jianweiz@phala.network}
@@ -33,14 +33,14 @@
 \maketitle
 
 \begin{abstract}
-    This report evaluates the performance impact of enabling Trusted Execution Environments (TEE) on nVIDIA H-series GPUs for large language model (LLM) inference tasks. We benchmark the overhead introduced by TEE mode across various LLMs and token lengths, with a particular focus on the bottleneck caused by CPU-GPU data transfers via PCIe. Our results indicate that while there is minimal computational overhead within the GPU, the overall performance penalty is primarily attributable to data transfer. For the majority of typical LLM queries, the overhead remains below 5\%, with larger models and longer sequences experiencing nearly zero overhead.
+    This report evaluates the performance impact of enabling Trusted Execution Environments (TEE) on nVIDIA Hopper GPUs for large language model (LLM) inference tasks. We benchmark the overhead introduced by TEE mode across various LLMs and token lengths, with a particular focus on the bottleneck caused by CPU-GPU data transfers via PCIe. Our results indicate that while there is minimal computational overhead within the GPU, the overall performance penalty is primarily attributable to data transfer. For the majority of typical LLM queries, the overhead remains below 7\%, with larger models and longer sequences experiencing nearly zero overhead.
 \end{abstract}
 
 \section{Introduction}
 
-Trusted Execution Environments (TEEs) are increasingly important in machine learning and AI due to growing security requirements in both enterprise and decentralized applications~\cite{sabt2015trusted, matetic2018delegatee, ayoade2018decentralized}. The introduction of TEE-enabled GPUs, such as the nVIDIA H100, adds an extra layer of protection for sensitive data but may impact performance. Understanding these trade-offs, particularly for large-scale machine learning tasks, is crucial for adopting TEE in high-performance AI applications~\cite{yudha2022lite, wang2024confidential}.
+Trusted Execution Environments (TEEs) are increasingly important in machine learning and AI due to growing security requirements in both enterprise and decentralized applications~\cite{sabt2015trusted, matetic2018delegatee, ayoade2018decentralized}. The introduction of TEE-enabled GPUs, such as the nVIDIA H100 and H200, adds an extra layer of protection for sensitive data but may impact performance. Understanding these trade-offs, particularly for large-scale machine learning tasks, is crucial for adopting TEE in high-performance AI applications~\cite{yudha2022lite, wang2024confidential}.
 
-This report quantifies the performance overhead of enabling TEE on the nVIDIA H100 GPU during LLM inference tasks, identifying where the overhead arises and under what conditions it can be minimized.
+This report quantifies the performance overhead of enabling TEE on the nVIDIA Hopper architecture GPUs during LLM inference tasks, identifying where the overhead arises and under what conditions it can be minimized.
 
 \section{Background}
 
@@ -48,19 +48,19 @@ This report quantifies the performance overhead of enabling TEE on the nVIDIA H1
 
 A TEE is a hardware-based security feature that isolates computations, preventing unauthorized access and tampering, even from the operating system or the physical hardware owner. As the core technology enabling Confidential Computing, TEEs create secure enclaves where sensitive data and code are processed with encryption, ensuring confidentiality and integrity even if the broader system is compromised~\cite{sabt2015trusted}. Traditionally implemented in CPUs, TEE technology was extended to GPUs by nVIDIA in 2023, enabling tamper-proof and confidentiality-preserving computation inside the GPU with minimal performance penalty~\cite{dhanuskodi2023creating}.
 
-\subsection{nVIDIA H100 GPU}
+\subsection{nVIDIA Hopper Architecture}
 
-The nVIDIA H100 GPU marks a significant milestone as the first GPU to support TEE. In TEE mode, the H100 operates in an isolated and secure environment where data transfers between the CPU and GPU are encrypted. This is achieved through ``bounce buffers'', which protect all inputs and outputs during transit between the CPU’s encrypted memory and the GPU’s internal memory~\cite{dhanuskodi2023creating}.
+The nVIDIA Hopper architecture marks a significant milestone as the first GPU family to support TEE~\cite{nvidiacc}. In TEE mode, the GPU operates in an isolated and secure environment where data transfers between the CPU and GPU are encrypted. This is achieved through ``bounce buffers'', which protect all inputs and outputs during transit between the CPU’s encrypted memory and the GPU’s internal memory~\cite{dhanuskodi2023creating}.
 
-To maintain end-to-end security, the H100 works in conjunction with CPU TEEs, such as Intel’s TDX~\cite{TDX} or AMD’s SEV-SNP~\cite{SEV-SNP, sev2020strengthening}, securing communication channels between the GPU driver and interacting software. This setup prevents unauthorized access and ensures data integrity throughout the process.
+To maintain end-to-end security, the GPU works in conjunction with CPU TEEs, such as Intel’s TDX~\cite{TDX} or AMD’s SEV-SNP~\cite{SEV-SNP, sev2020strengthening}, securing communication channels between the GPU driver and interacting software. This setup prevents unauthorized access and ensures data integrity throughout the process.
 
-The H100 also implements remote attestation to verify the GPU’s identity and the authenticity of its firmware. Additionally, Secure Boot ensures that only authenticated firmware is executed during the GPU’s boot process, further strengthening security.
+The Hopper series also implement remote attestation to verify the GPU’s identity and the authenticity of its firmware. Additionally, Secure Boot ensures that only authenticated firmware is executed during the GPU’s boot process, further strengthening security.
 
 \subsection{Performance Impact}
 
-Enabling TEE on the nVIDIA H100 GPU introduces performance overheads primarily due to additional encryption and decryption during secure data transfer~\cite{mohan2024securing}. While the GPU’s internal computation remains unaffected, the main bottleneck lies in the CPU-GPU I/O, particularly when data is exchanged via PCIe. This impact varies with the size of the data transfer. The following sections present experimental results quantifying these effects across various use cases.
+Enabling TEE on the nVIDIA Hopper GPU introduces performance overheads primarily due to additional encryption and decryption during secure data transfer~\cite{mohan2024securing}. While the GPU’s internal computation remains unaffected, the main bottleneck lies in the CPU-GPU I/O, particularly when data is exchanged via PCIe. This impact varies with the size of the data transfer. The following sections present experimental results quantifying these effects across various use cases.
 
-With the TEE-enabled nVIDIA H100 GPU, it becomes crucial to quantify performance trade-offs during practical use cases. In the next section, we outline the methodology used to assess the performance impact of TEE during LLM inference tasks.
+With the TEE-enabled nVIDIA Hopper GPU, it becomes crucial to quantify performance trade-offs during practical use cases. In the next section, we outline the methodology used to assess the performance impact of TEE during LLM inference tasks.
 
 \section{Methodology}
 
@@ -96,18 +96,32 @@ Experiments were structured to explore the impact of TEE mode under diverse cond
 
 \subsubsection{Infrastructure}
 
-The experiments were set up with the following hardware:
+The experiments were set up with the following hardwares, respectively.
 
-\begin{itemize}
-    \item \textbf{GPU}: nVIDIA H100 NVL (94GB, 3.9TB/s bandwidth) and H200 NVL (141GB, 4.8TB/s bandwidth)
-    \item \textbf{CPU}: AMD EPYC 9V84 96-Core Processor with SEV-SNP
-    \item \textbf{Memory}: 314 GB
-    \item \textbf{Driver versions}:
-          \begin{itemize}
-              \item CUDA 12.5 (driver version 555.42.02)
-              \item Kernel driver version 550.90.07
-          \end{itemize}
-\end{itemize}
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{llcc}
+        \toprule
+        \textbf{Component}                 & \textbf{Specification} & \textbf{Setup 1} & \textbf{Setup 2}         \\
+        \midrule
+        \multirow{3}{*}{\textbf{GPU}}      & Model                  & NVIDIA H100 NVL  & NVIDIA H200 NVL          \\
+                                           & Memory                 & 94 GB            & 141 GB                   \\
+                                           & Bandwidth              & 3.9 TB/s         & 4.8 TB/s                 \\
+        \midrule
+        \multirow{3}{*}{\textbf{CPU}}      & Model                  & AMD EPYC 9V84    & INTEL XEON PLATINUM 8558 \\
+                                           & Cores                  & 96               & 48                       \\
+                                           & TEE Technology         & SEV-SNP          & TDX                      \\
+        \midrule
+        \textbf{Memory}                    & Total Memory           & 314 GB           & 314 GB                   \\
+        \midrule
+        \multirow{3}{*}{\textbf{Software}} & CUDA Version           & 12.5             & 12.5                     \\
+                                           & Driver Version         & 555.42.02        & 555.42.06                \\
+                                           & Kernel Driver Version  & 550.90.07        & 550.90.07                \\
+        \bottomrule
+    \end{tabular}
+    \caption{Hardware Setup}
+    \label{tab:hardware_setup}
+\end{table}
 
 \subsubsection{Application}
 
@@ -120,7 +134,7 @@ Three LLMs were used for inference:
 \begin{itemize}
     \item \textbf{Meta-Llama-3.1-8B-Instruct}
     \item \textbf{Phi-3-14B-128k-Instruct}
-    \item \textbf{Meta-Llama-3.1-70B-Instruct} with 4-bit bitsandbytes quantization to fit into a single H100 GPU
+    \item \textbf{Meta-Llama-3.1-70B-Instruct} with 4-bit bitsandbytes quantization to fit into a single Hopper GPU
 \end{itemize}
 
 \section{Results}
@@ -131,16 +145,16 @@ Three LLMs were used for inference:
     \centering
     \begin{tabular}{llccc|ccc}
         \toprule
-        \textbf{GPU} & \textbf{Model}         & \multicolumn{3}{c}{\textbf{TPS (tokens/s)}} & \multicolumn{3}{c}{\textbf{QPS (req/s)}}                                                                                                                                                                                                \\
-        &                       & \textbf{TEE-on}                             & \textbf{TEE-off}                         & \textbf{Overhead}                                                          & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          \\
+        \textbf{GPU}                   & \textbf{Model}         & \multicolumn{3}{c}{\textbf{TPS (tokens/s)}} & \multicolumn{3}{c}{\textbf{QPS (req/s)}}                                                                                                                                                                                                \\
+                                       &                        & \textbf{TEE-on}                             & \textbf{TEE-off}                         & \textbf{Overhead}                                                          & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          \\
         \midrule
         \multirow{3}{*}{\textbf{H100}} & \textbf{LLama-3.1-8B}  & 123.2985                                    & 132.3618                                 & 6.85\%                                                                     & 18.2141         & 18.8208          & 3.22\%                                                                     \\
-        & \textbf{Phi3-14B-128k} & 66.5845                                     & 69.7787                                  & 4.58\%                                                                     & 7.1760          & 7.3456           & 2.31\%                                                                     \\
-        & \textbf{Llama-3.1-70B} & 2.4822                                      & 2.4789                                   & -0.13\%\tablefootnote{The overhead is negative due to the precision loss.} & 0.8325          & 0.8295           & -0.36\%\tablefootnote{The overhead is negative due to the precision loss.} \\
+                                       & \textbf{Phi3-14B-128k} & 66.5845                                     & 69.7787                                  & 4.58\%                                                                     & 7.1760          & 7.3456           & 2.31\%                                                                     \\
+                                       & \textbf{Llama-3.1-70B} & 2.4822                                      & 2.4789                                   & -0.13\%\tablefootnote{The overhead is negative due to the precision loss.} & 0.8325          & 0.8295           & -0.36\%\tablefootnote{The overhead is negative due to the precision loss.} \\
         \midrule
         \multirow{3}{*}{\textbf{H200}} & \textbf{LLama-3.1-8B}  & 121.0412                                    & 132.7830                                 & 8.84\%                                                                     & 29.5973         & 32.0134          & 7.55\%                                                                     \\
-        & \textbf{Phi3-14B-128k} & 68.4287                                     & 72.9825                                  & 6.24\%                                                                     & 12.8294         & 13.8558          & 7.41\%                                                                      \\
-        & \textbf{Llama-3.1-70B} & 4.0797                                      & 4.1753                                   & 2.29\%                                                                     & 2.1874          & 2.2011           & 0.63\% \\ 
+                                       & \textbf{Phi3-14B-128k} & 68.4287                                     & 72.9825                                  & 6.24\%                                                                     & 12.8294         & 13.8558          & 7.41\%                                                                     \\
+                                       & \textbf{Llama-3.1-70B} & 4.0797                                      & 4.1753                                   & 2.29\%                                                                     & 2.1874          & 2.2011           & 0.63\%                                                                     \\
         \bottomrule
     \end{tabular}
     \caption{Performance comparison of TEE-on and TEE-off modes for various models in terms of TPS (tokens per second) and QPS (queries per second).}
@@ -154,7 +168,7 @@ First, compared to H100, TEE mode introduces more overhead in H200 when runing t
 Second, the impact of TEE mode on QPS is more noticeable in H200.
 In H100, the impact of TEE mode on TPS is nearly double that of QPS, but in H200, the difference decreased significantly.
 
-\noindent\textbf{Conclusion 2: The overhead reduces as the model size grows.} As shown in Table \ref{tab:throughput_tee_on_ff}, the smallest model (\textbf{Llama-3.1-8B}) has the highest overhead. The medium-sized model (\textbf{Phi-3-14B-128k}) has roughly two-thirds of the overhead compared to the smaller one. 
+\noindent\textbf{Conclusion 2: The overhead reduces as the model size grows.} As shown in Table \ref{tab:throughput_tee_on_ff}, the smallest model (\textbf{Llama-3.1-8B}) has the highest overhead. The medium-sized model (\textbf{Phi-3-14B-128k}) has roughly two-thirds of the overhead compared to the smaller one.
 Notably, the largest model (\textbf{Llama-3.1-70B}) has a negligible overhead close to zero in H100.
 
 \noindent\textbf{Conclusion 3: The latency is the main factor contributing to the overhead of the TEE mode.} Table \ref{tab:latency_tee_on_ff} shows the overhead introduced to the latency measured by TTFT and ITL. TTFT has a higher overhead compared with ITL, indicating the bottleneck is likely introduced by the I/O instead of the computation happening inside the TEE. Nevertheless, the overhead becomes trivial when hosting heavy computation models like \textbf{Llama-3.1-70B}.
@@ -164,17 +178,17 @@ Additionally, TEE mode has also a greater impact on TTFL and ITL in H200 compare
     \centering
     \begin{tabular}{llccc|ccc}
         \toprule
-        \textbf{GPU} & \textbf{Model}         & \multicolumn{3}{c}{\textbf{TTFT (s)}} & \multicolumn{3}{c}{\textbf{ITL (s)}}                                                                                                                                                                                                \\
-        &                       & \textbf{TEE-on}                       & \textbf{TEE-off}                     & \textbf{Overhead}                                                          & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          \\
+        \textbf{GPU}                   & \textbf{Model}         & \multicolumn{3}{c}{\textbf{TTFT (s)}} & \multicolumn{3}{c}{\textbf{ITL (s)}}                                                                                                                                                                                                \\
+                                       &                        & \textbf{TEE-on}                       & \textbf{TEE-off}                     & \textbf{Overhead}                                                          & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          \\
         \midrule
         \multirow{3}{*}{\textbf{H100}} & \textbf{LLama-3.1-8B}  & 0.0288                                & 0.0242                               & 19.03\%                                                                    & 1.6743          & 1.5549           & 7.67\%                                                                     \\
-        & \textbf{Phi3-14B-128k} & 0.0546                                & 0.0463                               & 18.02\%                                                                    & 3.7676          & 3.5784           & 5.29\%                                                                     \\
-        & \textbf{Llama-3.1-70B} & 0.5108                                & 0.5129                               & -0.41\%\tablefootnote{The overhead is negative due to the precision loss.} & 94.8714         & 95.2395          & -0.39\%\tablefootnote{The overhead is negative due to the precision loss.} \\
+                                       & \textbf{Phi3-14B-128k} & 0.0546                                & 0.0463                               & 18.02\%                                                                    & 3.7676          & 3.5784           & 5.29\%                                                                     \\
+                                       & \textbf{Llama-3.1-70B} & 0.5108                                & 0.5129                               & -0.41\%\tablefootnote{The overhead is negative due to the precision loss.} & 94.8714         & 95.2395          & -0.39\%\tablefootnote{The overhead is negative due to the precision loss.} \\
 
         \midrule
-        \multirow{3}{*}{\textbf{H200}} & \textbf{LLama-3.1-8B}  & 0.0364                                & 0.0301                               & 20.95\%                                                                    & 1.7158          & 1.5552           & 10.33\%                                                                     \\
-        & \textbf{Phi3-14B-128k} & 0.0524                                & 0.0417                               & 25.60\%                                                                    & 3.6975          & 3.4599           & 6.87\%                                                                     \\
-        & \textbf{Llama-3.1-70B} & 0.4362                                & 0.4204                               & 3.75\%                                                                    & 57.3855          & 55.9771           & 2.52\% \\
+        \multirow{3}{*}{\textbf{H200}} & \textbf{LLama-3.1-8B}  & 0.0364                                & 0.0301                               & 20.95\%                                                                    & 1.7158          & 1.5552           & 10.33\%                                                                    \\
+                                       & \textbf{Phi3-14B-128k} & 0.0524                                & 0.0417                               & 25.60\%                                                                    & 3.6975          & 3.4599           & 6.87\%                                                                     \\
+                                       & \textbf{Llama-3.1-70B} & 0.4362                                & 0.4204                               & 3.75\%                                                                     & 57.3855         & 55.9771          & 2.52\%                                                                     \\
         \bottomrule
     \end{tabular}
     \caption{Comparison of TTFT (Time to First Token) and ITL (Inter Output Token Latency) for TEE-on and TEE-off modes across models.}
@@ -206,17 +220,17 @@ Additionally, TEE mode has also a greater impact on TTFL and ITL in H200 compare
     \resizebox{\textwidth}{!}{%
         \begin{tabular}{llccc|ccc|ccc}
             \toprule
-            \textbf{GPU} & \textbf{Model}         & \multicolumn{3}{c}{\textbf{TPS - short (tokens/s)}} & \multicolumn{3}{c}{\textbf{TPS - medium (tokens/s)}} & \multicolumn{3}{c}{\textbf{TPS - long (tokens/s)}}                                                                                                                                                                                                                                     \\
-            &                       & \textbf{TEE-on}                                     & \textbf{TEE-off}                                     & \textbf{Overhead}                                  & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          \\
+            \textbf{GPU}                   & \textbf{Model}         & \multicolumn{3}{c}{\textbf{TPS - short (tokens/s)}} & \multicolumn{3}{c}{\textbf{TPS - medium (tokens/s)}} & \multicolumn{3}{c}{\textbf{TPS - long (tokens/s)}}                                                                                                                                                                                                                                     \\
+                                           &                        & \textbf{TEE-on}                                     & \textbf{TEE-off}                                     & \textbf{Overhead}                                  & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          & \textbf{TEE-on} & \textbf{TEE-off} & \textbf{Overhead}                                                          \\
             \midrule
             \multirow{3}{*}{\textbf{H100}} & \textbf{LLama-3.1-8B}  & 127.0310                                            & 136.8282                                             & 7.16\%                                             & 122.9356        & 132.0464         & 6.90\%                                                                     & 122.9705        & 131.7333         & 6.65\%                                                                     \\
-            & \textbf{Phi3-14B-128k} & 70.9799                                             & 74.7556                                              & 5.05\%                                             & 66.1690         & 69.3104          & 4.53\%                                                                     & 66.2987         & 69.4176          & 4.49\%                                                                     \\
-            & \textbf{Llama-3.1-70B} & 2.5983                                              & 2.6073                                               & 0.34\%                                             & 2.4413          & 2.4374           & -0.16\%\tablefootnote{The overhead is negative due to the precision loss.} & 2.5245          & 2.5168           & -0.30\%\tablefootnote{The overhead is negative due to the precision loss.} \\
-            
+                                           & \textbf{Phi3-14B-128k} & 70.9799                                             & 74.7556                                              & 5.05\%                                             & 66.1690         & 69.3104          & 4.53\%                                                                     & 66.2987         & 69.4176          & 4.49\%                                                                     \\
+                                           & \textbf{Llama-3.1-70B} & 2.5983                                              & 2.6073                                               & 0.34\%                                             & 2.4413          & 2.4374           & -0.16\%\tablefootnote{The overhead is negative due to the precision loss.} & 2.5245          & 2.5168           & -0.30\%\tablefootnote{The overhead is negative due to the precision loss.} \\
+
             \midrule
             \multirow{3}{*}{\textbf{H200}} & \textbf{LLama-3.1-8B}  & 124.1744                                            & 136.2283                                             & 8.85\%                                             & 120.4250        & 132.2366         & 8.93\%                                                                     & 121.3849        & 132.9002         & 8.66\%                                                                     \\
-            & \textbf{Phi3-14B-128k} & 71.8940                                             & 76.2754                                              & 5.74\%                                             & 67.8290         & 72.3372          & 6.23\%                                                                     & 68.5863         & 73.2384          & 6.35\%                                                                     \\
-            & \textbf{Llama-3.1-70B} & 4.2261                                              & 4.3295                                               & 2.39\%                                             & 4.0425          & 4.1386           & 2.32\%                                                                     & 4.0947          & 4.1886          & 2.24\%                                                                     \\
+                                           & \textbf{Phi3-14B-128k} & 71.8940                                             & 76.2754                                              & 5.74\%                                             & 67.8290         & 72.3372          & 6.23\%                                                                     & 68.5863         & 73.2384          & 6.35\%                                                                     \\
+                                           & \textbf{Llama-3.1-70B} & 4.2261                                              & 4.3295                                               & 2.39\%                                             & 4.0425          & 4.1386           & 2.32\%                                                                     & 4.0947          & 4.1886           & 2.24\%                                                                     \\
             \bottomrule
         \end{tabular}%
     }
@@ -225,46 +239,46 @@ Additionally, TEE mode has also a greater impact on TTFL and ITL in H200 compare
 \end{table}
 
 \noindent\textbf{Conclusion 5: TEE can reach typical throughput.}
-Here we use H100 for the case study. Our experiments revealed that, with medium-sized inputs, the nVIDIA H100 GPU achieves 130 TPS for Llama-3.1-8B, while the larger Phi-3-14B model reaches approximately 6 TPS. These results demonstrate the robust performance of the H100 GPU across models of varying complexity.
+Here, we use nVIDIA H100 for the case study. Our experiments revealed that, with medium-sized inputs, the H100 GPU achieves 130 TPS for Llama-3.1-8B, while the larger Phi-3-14B model reaches approximately 6 TPS. These results demonstrate the robust performance of the H100 GPU across models of varying complexity.
 
 More detailed experimental data for H100 is shown in Figures \ref{fig:scatter-llama8b-h100}, \ref{fig:scatter-phi14b-h100}, and \ref{fig:scatter-llama70b-h100}, and for H200 in Figures \ref{fig:scatter-llama8b-h200}, \ref{fig:scatter-phi14b-h200}, and \ref{fig:scatter-llama70b-h200}.
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
     \centering
     \includegraphics[width=1\linewidth]{outputs/h100/scatter-llama8b.png}
     \caption{Throughput vs output token size for \textbf{LLama-3.1-8B} in H100.}
     \label{fig:scatter-llama8b-h100}
 \end{figure}
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
     \centering
     \includegraphics[width=1\linewidth]{outputs/h100/scatter-phi14b.png}
     \caption{Throughput vs output token size for \textbf{Phi3-14B-128k} in H100.}
     \label{fig:scatter-phi14b-h100}
 \end{figure}
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
     \centering
     \includegraphics[width=1\linewidth]{outputs/h100/scatter-llama70b.png}
     \caption{Throughput vs output token size for \textbf{Llama-3.1-70B} in H100.}
     \label{fig:scatter-llama70b-h100}
 \end{figure}
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
     \centering
     \includegraphics[width=1\linewidth]{outputs/h200_1c/scatter-llama8b.png}
     \caption{Throughput vs output token size for \textbf{LLama-3.1-8B} in H200.}
     \label{fig:scatter-llama8b-h200}
 \end{figure}
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
     \centering
     \includegraphics[width=1\linewidth]{outputs/h200_1c/scatter-phi14b.png}
     \caption{Throughput vs output token size for \textbf{Phi3-14B-128k} in H200.}
     \label{fig:scatter-phi14b-h200}
 \end{figure}
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
     \centering
     \includegraphics[width=1\linewidth]{outputs/h200_1c/scatter-llama70b.png}
     \caption{Throughput vs output token size for \textbf{Llama-3.1-70B} in H200.}
