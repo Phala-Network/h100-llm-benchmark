@@ -12,7 +12,7 @@
 \usepackage{multirow}
 \usepackage{subcaption}
 
-\title{Confidential Computing on nVIDIA H100 GPU: A Performance Benchmark Study}
+\title{Confidential Computing on nVIDIA H-series GPU: A Performance Benchmark Study}
 \author{
   Jianwei Zhu \\
   \texttt{jianweiz@phala.network}
@@ -33,7 +33,7 @@
 \maketitle
 
 \begin{abstract}
-    This report evaluates the performance impact of enabling Trusted Execution Environments (TEE) on nVIDIA H100 GPUs for large language model (LLM) inference tasks. We benchmark the overhead introduced by TEE mode across various LLMs and token lengths, with a particular focus on the bottleneck caused by CPU-GPU data transfers via PCIe. Our results indicate that while there is minimal computational overhead within the GPU, the overall performance penalty is primarily attributable to data transfer. For the majority of typical LLM queries, the overhead remains below 5\%, with larger models and longer sequences experiencing nearly zero overhead.
+    This report evaluates the performance impact of enabling Trusted Execution Environments (TEE) on nVIDIA H-series GPUs for large language model (LLM) inference tasks. We benchmark the overhead introduced by TEE mode across various LLMs and token lengths, with a particular focus on the bottleneck caused by CPU-GPU data transfers via PCIe. Our results indicate that while there is minimal computational overhead within the GPU, the overall performance penalty is primarily attributable to data transfer. For the majority of typical LLM queries, the overhead remains below 5\%, with larger models and longer sequences experiencing nearly zero overhead.
 \end{abstract}
 
 \section{Introduction}
@@ -87,7 +87,7 @@ The primary metrics were evaluated following typical evaluation frameworks \cite
 
 Experiments were structured to explore the impact of TEE mode under diverse conditions:
 \begin{itemize}
-    \item \textbf{TEE mode ON vs. TEE mode OFF}: Tests were performed with TEE mode alternately enabled and disabled on the H100 GPU, allowing for a direct comparison of performance.
+    \item \textbf{TEE mode ON vs. TEE mode OFF}: Tests were performed with TEE mode alternately enabled and disabled on the H-series GPUs, allowing for a direct comparison of performance.
     \item \textbf{Sequence Lengths}: Various token lengths were tested by sampling the ShareGPT Dataset \cite{sharegpt} to simulate different LLM inference tasks.
     \item \textbf{Batch Size}: Both fixed batch sizes (1, 4, and 16) and dynamic batch sizes determined by vLLM \cite{kwon2023efficient} were tested to simulate the performance for serving real-time requests and batch requests.
 \end{itemize}
@@ -99,7 +99,7 @@ Experiments were structured to explore the impact of TEE mode under diverse cond
 The experiments were set up with the following hardware:
 
 \begin{itemize}
-    \item \textbf{GPU}: nVIDIA H100 NVL (94GB, 3.9TB/s bandwidth) and nVIDIA H200 NVL
+    \item \textbf{GPU}: nVIDIA H100 NVL (94GB, 3.9TB/s bandwidth) and H200 NVL (141GB, 4.8TB/s bandwidth)
     \item \textbf{CPU}: AMD EPYC 9V84 96-Core Processor with SEV-SNP
     \item \textbf{Memory}: 314 GB
     \item \textbf{Driver versions}:
@@ -125,7 +125,7 @@ Three LLMs were used for inference:
 
 \section{Results}
 
-\peng{\noindent\textbf{Conclusion 1: The average overhead is less than 9\%.}} We quantified the overhead by measuring the throughput with TEE mode enabled versus disabled, across varying input sizes and model configurations, as shown in Table \ref{tab:throughput_tee_on_ff}.
+\noindent\textbf{Conclusion 1: The average overhead is less than 9\%.} We quantified the overhead by measuring the throughput with TEE mode enabled versus disabled, across varying input sizes and model configurations, as shown in Table \ref{tab:throughput_tee_on_ff}.
 
 \begin{table}[htbp]
     \centering
@@ -149,18 +149,16 @@ Three LLMs were used for inference:
 
 The throughput is measured in two ways: the average throughput of the outputted tokens per second (TPS), and that of the parallel requests the hardware can handle (QPS). TPS is measured by running the model with a batch size of 1. It shows the pure latency overhead introduced by the TEE mode and reflects the performance of real-time requests. QPS is measured by maximizing the query throughput with a dynamically optimized batch size. It reflects the minimal average overhead the TEE mode brings.
 
-\peng{
 We observed a difference in the impact of TEE mode between H100 and H200 in Table~\ref{tab:throughput_tee_on_ff}.
 First, compared to H100, TEE mode introduces more overhead in H200 when runing the same model.
 Second, the impact of TEE mode on QPS is more noticeable in H200.
 In H100, the impact of TEE mode on TPS is nearly double that of QPS, but in H200, the difference decreased significantly.
-}
 
 \noindent\textbf{Conclusion 2: The overhead reduces as the model size grows.} As shown in Table \ref{tab:throughput_tee_on_ff}, the smallest model (\textbf{Llama-3.1-8B}) has the highest overhead. The medium-sized model (\textbf{Phi-3-14B-128k}) has roughly two-thirds of the overhead compared to the smaller one. 
-\peng{Notably, the largest model (\textbf{Llama-3.1-70B}) has a trivial overhead close to zero in H100.}
+Notably, the largest model (\textbf{Llama-3.1-70B}) has a negligible overhead close to zero in H100.
 
 \noindent\textbf{Conclusion 3: The latency is the main factor contributing to the overhead of the TEE mode.} Table \ref{tab:latency_tee_on_ff} shows the overhead introduced to the latency measured by TTFT and ITL. TTFT has a higher overhead compared with ITL, indicating the bottleneck is likely introduced by the I/O instead of the computation happening inside the TEE. Nevertheless, the overhead becomes trivial when hosting heavy computation models like \textbf{Llama-3.1-70B}.
-\peng{Additionally, TEE mode has also a greater impact on TTFL and ITL in H200 compared to H100.}
+Additionally, TEE mode has also a greater impact on TTFL and ITL in H200 compared to H100.
 
 \begin{table}[htbp]
     \centering
@@ -227,50 +225,50 @@ In H100, the impact of TEE mode on TPS is nearly double that of QPS, but in H200
 \end{table}
 
 \noindent\textbf{Conclusion 5: TEE can reach typical throughput.}
-Our experiments revealed that, with medium-sized inputs, the nVIDIA H100 GPU achieves 130 TPS for Llama-3.1-8B, while the larger Phi-3-14B model reaches approximately 6 TPS. These results demonstrate the robust performance of the H100 GPU across models of varying complexity.
+Here we use H100 for the case study. Our experiments revealed that, with medium-sized inputs, the nVIDIA H100 GPU achieves 130 TPS for Llama-3.1-8B, while the larger Phi-3-14B model reaches approximately 6 TPS. These results demonstrate the robust performance of the H100 GPU across models of varying complexity.
 
-More detailed experimental data for H100 is shown in Figures \ref{fig:scatter-llama8b}, \ref{fig:scatter-phi14b}, and \ref{fig:scatter-llama70b}, and for H200 in Figures \ref{fig:scatter-llama8b}, \ref{fig:scatter-phi14b}, and \ref{fig:scatter-llama70b}.
+More detailed experimental data for H100 is shown in Figures \ref{fig:scatter-llama8b-h100}, \ref{fig:scatter-phi14b-h100}, and \ref{fig:scatter-llama70b-h100}, and for H200 in Figures \ref{fig:scatter-llama8b-h200}, \ref{fig:scatter-phi14b-h200}, and \ref{fig:scatter-llama70b-h200}.
 
 \begin{figure}[ht]
     \centering
     \includegraphics[width=1\linewidth]{outputs/h100/scatter-llama8b.png}
     \caption{Throughput vs output token size for \textbf{LLama-3.1-8B} in H100.}
-    \label{fig:scatter-llama8b}
+    \label{fig:scatter-llama8b-h100}
 \end{figure}
 
 \begin{figure}[ht]
     \centering
     \includegraphics[width=1\linewidth]{outputs/h100/scatter-phi14b.png}
     \caption{Throughput vs output token size for \textbf{Phi3-14B-128k} in H100.}
-    \label{fig:scatter-phi14b}
+    \label{fig:scatter-phi14b-h100}
 \end{figure}
 
 \begin{figure}[ht]
     \centering
     \includegraphics[width=1\linewidth]{outputs/h100/scatter-llama70b.png}
     \caption{Throughput vs output token size for \textbf{Llama-3.1-70B} in H100.}
-    \label{fig:scatter-llama70b}
+    \label{fig:scatter-llama70b-h100}
 \end{figure}
 
 \begin{figure}[ht]
     \centering
     \includegraphics[width=1\linewidth]{outputs/h200_1c/scatter-llama8b.png}
     \caption{Throughput vs output token size for \textbf{LLama-3.1-8B} in H200.}
-    \label{fig:scatter-llama8b}
+    \label{fig:scatter-llama8b-h200}
 \end{figure}
 
 \begin{figure}[ht]
     \centering
     \includegraphics[width=1\linewidth]{outputs/h200_1c/scatter-phi14b.png}
     \caption{Throughput vs output token size for \textbf{Phi3-14B-128k} in H200.}
-    \label{fig:scatter-phi14b}
+    \label{fig:scatter-phi14b-h200}
 \end{figure}
 
 \begin{figure}[ht]
     \centering
     \includegraphics[width=1\linewidth]{outputs/h200_1c/scatter-llama70b.png}
     \caption{Throughput vs output token size for \textbf{Llama-3.1-70B} in H200.}
-    \label{fig:scatter-llama70b}
+    \label{fig:scatter-llama70b-h200}
 \end{figure}
 
 \section{Conclusion}
